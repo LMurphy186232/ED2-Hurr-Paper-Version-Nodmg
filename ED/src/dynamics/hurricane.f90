@@ -28,6 +28,7 @@
 !> If IDETAILED = 64, indicating disturbance details are to be written, this will write a
 !> detailed file of storm activity called "hurricane_report.txt"
 !>
+!> This version turns off storm damage but not mortality.
 !> Possible future work: randomly generate a storm regime
 !> \author Lora Murphy, September 2021
 !------------------------------------------------------------------------------------------!
@@ -308,17 +309,7 @@ module hurricane
                      ! of height
                      !---------------------------------------------------------------------!
                      bdead_loss = 0
-
-                     !----- Medium damage: structural loss --------------------------------!
-                     amt = (rand() * (med_dmg_max(ipft) - med_dmg_min(ipft)))              &
-                         + med_dmg_min(ipft)
-                     bdead_loss = bdead_loss + (prob_med   * amt)
-
-                     !----- Heavy damage: structural loss ---------------------------------!
-                     amt = (rand() * (max_dmg_max(ipft) - max_dmg_min(ipft)))              &
-                         + max_dmg_min(ipft)
-                     bdead_loss = bdead_loss + (prob_heavy * amt)
-
+                     
                      !----- Current BDEAD -------------------------------------------------!
                      bdead_in = cpatch%bdeada(ico) + cpatch%bdeadb(ico)
                      !----- Current AGB, for reporting ------------------------------------!
@@ -332,59 +323,7 @@ module hurricane
                      hite_in = cpatch%hite(ico)
                      new_hite = bd2h(new_bdead, cpatch%dbh(ico), ipft)
 
-                     !----- Don't let height grow -----------------------------------------!
-                     !if (new_hite <= cpatch%hite(ico)) then
-                     if (new_hite < cpatch%hite(ico) .and. cpatch%hite(ico) - new_hite > 0.1) then
-                        cpatch%hite(ico) = new_hite
-
-                        !----- What is the dbh that matches this new height? --------------!
-                        dbh_aim = h2dbh(cpatch%hite(ico), ipft)
-
-                        !----- Use these size measures to get other ABG values ------------!
-                        !----- Make sure that no measure increases ------------------------!
-                        amt = size2bd(dbh_aim, cpatch%hite(ico), ipft) * agf_bs(ipft)
-                        if (amt < cpatch%bdeada(ico)) then 
-                          cpatch%bdeada(ico) = amt
-                        end if
-                        
-                        amt = size2bl(dbh_aim, cpatch%hite(ico), cpatch%sla(ico), ipft)
-                        if (amt < cpatch%bleaf(ico)) then 
-                          cpatch%bleaf(ico) = amt
-                        end if
-                        
-                        amt = cpatch%bleaf(ico) * qbark(ipft) * cpatch%hite(ico) * agf_bs(ipft)
-                        if (amt < cpatch%bbarka(ico)) then 
-                          cpatch%bbarka(ico) = amt
-                        end if
-                        
-                        amt = cpatch%bleaf(ico) * qsw  (ipft) * cpatch%hite(ico) * agf_bs(ipft)
-                        if (amt < cpatch%bsapwooda(ico)) then 
-                          cpatch%bsapwooda(ico) = amt
-                        end if
-
-                        !----- Light damage: leaf loss only, up to 25% -----------------------!
-                        cpatch%bleaf(ico) = cpatch%bleaf(ico) * (prob_light * (rand() * 0.25))
-
-                        !----- Have the cohort update itself ------------------------------!
-                        call update_cohort_derived_props(cpatch,ico,cpoly%lsl(isi),.false. &
-                                                        ,cpoly%llspan_toc(ipft,isi)        &
-                                                        ,cpoly%vm_bar_toc(ipft,isi)        &
-                                                        ,cpoly%rd_bar_toc(ipft,isi)        &
-                                                        ,cpoly%sla_toc   (ipft,isi) )
-                        !------------------------------------------------------------------!
-                     else
-                       !----- Light damage: leaf loss only, up to 25% -----------------------!
-                       cpatch%bleaf(ico) = cpatch%bleaf(ico) * (prob_light * (rand() * 0.25))
-
-                       !----- Have the cohort update itself ------------------------------!
-                       call update_cohort_derived_props(cpatch,ico,cpoly%lsl(isi),.false. &
-                                                       ,cpoly%llspan_toc(ipft,isi)        &
-                                                       ,cpoly%vm_bar_toc(ipft,isi)        &
-                                                       ,cpoly%rd_bar_toc(ipft,isi)        &
-                                                       ,cpoly%sla_toc   (ipft,isi) )
-                       !------------------------------------------------------------------!
-                       
-                     end if
+                     
 
 
 
@@ -394,14 +333,14 @@ module hurricane
                      ! plants / m2. Multiplying by nplant gives us kgC / m2, which is the  !
                      ! units of the litter pools                                           !
                      !---------------------------------------------------------------------!
-                     bleaf_loss     = (bleaf_in     - cpatch%bleaf    (ico)) * cpatch%nplant(ico)
-                     bdeada_loss    = (bdeada_in    - cpatch%bdeada   (ico)) * cpatch%nplant(ico)
-                     bdeadb_loss    = (bdeadb_in    - cpatch%bdeadb   (ico)) * cpatch%nplant(ico)
-                     broot_loss     = (broot_in     - cpatch%broot    (ico)) * cpatch%nplant(ico)
-                     bbarka_loss    = (bbarka_in    - cpatch%bbarka   (ico)) * cpatch%nplant(ico)
-                     bbarkb_loss    = (bbarkb_in    - cpatch%bbarkb   (ico)) * cpatch%nplant(ico)
-                     bsapwooda_loss = (bsapwooda_in - cpatch%bsapwooda(ico)) * cpatch%nplant(ico)
-                     bsapwoodb_loss = (bsapwoodb_in - cpatch%bsapwoodb(ico)) * cpatch%nplant(ico)
+                     bleaf_loss     = 0
+                     bdeada_loss    = 0
+                     bdeadb_loss    = 0
+                     broot_loss     = 0
+                     bbarka_loss    = 0
+                     bbarkb_loss    = 0
+                     bsapwooda_loss = 0
+                     bsapwoodb_loss = 0
 
 
                      !----- Add amount lost to storm mortality -----------------------------!
